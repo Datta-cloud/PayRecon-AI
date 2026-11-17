@@ -1,8 +1,10 @@
+
 """Central configuration for PayRecon AI.
 
 Everything that is a tunable setting or a shared constant lives here so the
 business logic, the UI and the tests all agree on the same names.
 """
+
 from __future__ import annotations
 
 import os
@@ -12,17 +14,65 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Optional
 
-try:  # python-dotenv is optional: it only helps local development.
-    from dotenv import load_dotenv
+from dotenv import load_dotenv
 
-    load_dotenv()
-except ImportError:  # pragma: no cover - dotenv not installed
-    pass
+load_dotenv()
+
+
+# --------------------------------------------------------------------------
+# AI (Gemini)
+# --------------------------------------------------------------------------
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+
+# Use a model ID supported by your Google AI Studio API key.
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+
+GEMINI_TIMEOUT_SECONDS = 30
+GEMINI_MAX_RETRIES = 2
+
+# Compatibility aliases for existing code using mixed capitalization.
+Gemini_TIMEOUT_SECONDS = GEMINI_TIMEOUT_SECONDS
+Gemini_MAX_RETRIES = GEMINI_MAX_RETRIES
+
+
+def get_GEMINI_API_KEY() -> Optional[str]:
+    """Get Gemini API key from environment or Streamlit secrets."""
+
+    key = os.getenv("GEMINI_API_KEY", "").strip()
+
+    if key:
+        return key
+
+    try:
+        import streamlit as st
+
+        secret = st.secrets.get("GEMINI_API_KEY")
+
+        if secret and str(secret).strip():
+            return str(secret).strip()
+
+    except Exception:
+        pass
+
+    return None
+
+
+# Compatibility aliases for different existing import spellings.
+def get_Gemini_api_key() -> Optional[str]:
+    return get_GEMINI_API_KEY()
+
+
+def get_gemini_api_key() -> Optional[str]:
+    return get_GEMINI_API_KEY()
+
 
 # --------------------------------------------------------------------------
 # Application
 # --------------------------------------------------------------------------
+
 APP_NAME = "PayRecon AI"
+
 APP_TAGLINE = (
     "Compare your payment platform records with bank settlements and find "
     "rounding differences, duplicates and refunds without an original payment."
@@ -30,15 +80,21 @@ APP_TAGLINE = (
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
+
 PLATFORM_CSV = DATA_DIR / "platform_transactions.csv"
 BANK_CSV = DATA_DIR / "bank_settlements.csv"
+
 DEFAULT_SEED = 42
+
 
 # --------------------------------------------------------------------------
 # Input schema
 # --------------------------------------------------------------------------
+
 SUPPORTED_CURRENCIES = ("INR", "USD", "EUR", "GBP")
+
 TRANSACTION_TYPES = ("PAYMENT", "REFUND")
+
 PLATFORM_STATUSES = ("SUCCESS", "FAILED")
 
 PLATFORM_REQUIRED_COLUMNS = (
@@ -50,7 +106,9 @@ PLATFORM_REQUIRED_COLUMNS = (
     "currency",
     "status",
 )
+
 PLATFORM_OPTIONAL_COLUMNS = ("original_transaction_id",)
+
 BANK_REQUIRED_COLUMNS = (
     "settlement_id",
     "transaction_id",
@@ -60,10 +118,13 @@ BANK_REQUIRED_COLUMNS = (
     "bank_reference",
 )
 
+
 # --------------------------------------------------------------------------
-# Match statuses (one per transaction in the reconciliation result)
+# Match statuses
 # --------------------------------------------------------------------------
+
 MATCHED = "Matched"
+
 ROUNDING_DIFFERENCE = "Rounding Difference"
 AMOUNT_MISMATCH = "Amount Mismatch"
 PENDING_SETTLEMENT = "Pending Settlement"
@@ -83,9 +144,11 @@ MATCH_STATUSES = (
     NOT_SETTLEABLE,
 )
 
+
 # --------------------------------------------------------------------------
-# Discrepancy categories (rows of the discrepancy report)
+# Discrepancy categories
 # --------------------------------------------------------------------------
+
 CAT_ROUNDING = "Rounding Difference"
 CAT_DUPLICATE = "Duplicate Entry"
 CAT_UNMATCHED_REFUND = "Unmatched Refund"
@@ -95,58 +158,32 @@ CAT_MISSING_PLATFORM = "Missing from Platform"
 CAT_STATUS_CONFLICT = "Status Conflict"
 CAT_REFUND_INCONSISTENT = "Refund Inconsistency"
 
+
 # --------------------------------------------------------------------------
 # Refund review statuses
 # --------------------------------------------------------------------------
+
 REFUND_VALID = "Valid"
 REFUND_UNMATCHED = "Unmatched Refund"
 REFUND_INVALID_REF = "Invalid Reference"
 REFUND_INCONSISTENT = "Inconsistent Refund"
 
 # --------------------------------------------------------------------------
-# AI (Groq)
-# --------------------------------------------------------------------------
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
-GROQ_TIMEOUT_SECONDS = 20
-GROQ_MAX_RETRIES = 1
-
-
-def get_groq_api_key() -> Optional[str]:
-    """Return the Groq API key from the environment or Streamlit secrets.
-
-    The key is only ever read on the server side and is never rendered in the UI.
-    Returns ``None`` when no key is configured, which makes the app fall back to
-    template-based explanations.
-    """
-    key = os.getenv("GROQ_API_KEY")
-    if key and key.strip():
-        return key.strip()
-    try:
-        import streamlit as st
-
-        secret = st.secrets.get("GROQ_API_KEY")  # raises if no secrets file exists
-        if secret and str(secret).strip():
-            return str(secret).strip()
-    except Exception:  # noqa: BLE001 - no secrets file / not running in Streamlit
-        return None
-    return None
-
-
-# --------------------------------------------------------------------------
 # Reconciliation settings
 # --------------------------------------------------------------------------
+
 @dataclass(frozen=True)
 class ReconConfig:
     """Settings that change how reconciliation decisions are made.
 
     Attributes:
         settlement_min_days: Earliest normal settlement lag (calendar days).
-        settlement_max_days: Latest normal settlement lag. A payment with no bank
-            record yet is "Pending" while its age is <= this value.
-        rounding_tolerance: Largest absolute per-transaction difference that is
-            treated as a rounding difference. Larger gaps are "Amount Mismatch".
+        settlement_max_days: Latest normal settlement lag. A payment with no
+            bank record yet is "Pending" while its age is <= this value.
+        rounding_tolerance: Largest absolute per-transaction difference that
+            is treated as a rounding difference.
         supported_currencies: Currency codes accepted by the validator.
-        as_of_date: The reporting date. ``None`` means "latest date in the data".
+        as_of_date: Reporting date. None means latest date in the data.
     """
 
     settlement_min_days: int = 1
@@ -158,9 +195,18 @@ class ReconConfig:
     def __post_init__(self) -> None:
         if self.settlement_min_days < 0:
             raise ValueError("settlement_min_days cannot be negative")
+
         if self.settlement_max_days < self.settlement_min_days:
-            raise ValueError("settlement_max_days must be >= settlement_min_days")
+            raise ValueError(
+                "settlement_max_days must be >= settlement_min_days"
+            )
+
         tol = Decimal(str(self.rounding_tolerance))
+
         if tol < 0:
             raise ValueError("rounding_tolerance cannot be negative")
+
         object.__setattr__(self, "rounding_tolerance", tol)
+def get_groq_api_key():
+    """Backward compatibility for old imports. Returns the Gemini API key."""
+    return get_Gemini_api_key()

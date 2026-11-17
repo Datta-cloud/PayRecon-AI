@@ -2,13 +2,13 @@
 from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
-
+from config import get_Gemini_api_key
 import pandas as pd
 import streamlit as st
 
 from config import (
     APP_NAME, APP_TAGLINE, BANK_CSV, DEFAULT_SEED, MATCH_STATUSES, MATCHED, PLATFORM_CSV, ReconConfig,
-    get_groq_api_key,
+    get_Gemini_api_key,
 )
 from data.generate_data import write_datasets
 from reconciliation import ai_explainer
@@ -250,7 +250,11 @@ with tabs[6]:
         "The engine finds every discrepancy. The AI only explains results the engine already produced, "
         "and it never sees customer IDs or bank references."
     )
-    st.caption("Groq API key found." if get_groq_api_key() else "No GROQ_API_KEY set, so template explanations are used.")
+    st.caption(
+    "Gemini API key found."
+    if get_Gemini_api_key()
+    else "No GEMINI_API_KEY set, so template explanations are used."
+)
     if st.button("Generate month-end summary"):
         with st.spinner("Writing summary..."):
             st.session_state["ai_summary"] = ai_explainer.generate_summary(result)
