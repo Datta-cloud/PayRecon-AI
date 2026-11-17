@@ -1,0 +1,414 @@
+# PROJECT: PayRecon AI – Intelligent Payment Reconciliation System
+
+You are an expert Python developer, AI engineer and software architect. I want you to build a complete, working, production-minded Payment Reconciliation application for my AI Native Engineer Intern assessment.
+
+Do not just explain how to build it. Actually create the complete project, all source-code files, test datasets, tests, configuration files and documentation in the current workspace.
+
+## 1. Problem Statement
+
+A payment company records customer transactions instantly on its payment platform. However, the bank settles the money after 1–2 days.
+
+At the end of the month, the company's internal payment records and bank settlement records should match.
+
+The application must compare both datasets and identify discrepancies.
+
+It must detect exactly these three required discrepancy categories:
+
+1. Rounding Difference: Small transaction-level differences that become noticeable when amounts are summed.
+2. Duplicate Entry: A transaction recorded more than once in either dataset.
+3. Unmatched Refund: A refund transaction without a corresponding original transaction.
+
+Also identify transactions that are not yet settled because the bank settlement can take 1–2 days. Do not incorrectly classify these as errors.
+
+## 2. Technology Stack
+
+Use:
+
+- Python 3.11 or a compatible stable Python version.
+- Streamlit for the frontend.
+- Pandas and NumPy for data processing.
+- Plotly for interactive charts.
+- Groq API with an appropriate LangChain integration or the official Groq Python SDK for AI explanations.
+- Pytest for automated testing.
+- Git and GitHub for version control.
+- Streamlit Community Cloud for deployment.
+
+Keep the application modular. Do not put all functionality into one Python file.
+
+## 3. Project Architecture
+
+Create the following project structure:
+
+PayRecon-AI/
+│
+├── app.py
+├── config.py
+├── requirements.txt
+├── README.md
+├── .env.example
+├── .gitignore
+│
+├── data/
+│   ├── generate_data.py
+│   ├── platform_transactions.csv
+│   └── bank_settlements.csv
+│
+├── reconciliation/
+│   ├── __init__.py
+│   ├── data_loader.py
+│   ├── validator.py
+│   ├── matcher.py
+│   ├── discrepancy_detector.py
+│   ├── reconciliation_engine.py
+│   └── ai_explainer.py
+│
+├── utils/
+│   ├── __init__.py
+│   ├── formatting.py
+│   └── export.py
+│
+├── tests/
+│   ├── __init__.py
+│   ├── test_data_loader.py
+│   ├── test_duplicates.py
+│   ├── test_rounding.py
+│   ├── test_refunds.py
+│   └── test_reconciliation.py
+│
+└── .streamlit/
+    └── config.toml
+
+You may improve the structure if necessary, but maintain separation between the user interface, business logic and AI functionality.
+
+## 4. Dataset Generation
+
+No datasets are provided. Create a realistic synthetic dataset generator.
+
+Generate two CSV files:
+
+A. platform_transactions.csv
+
+Include:
+- transaction_id
+- customer_id
+- transaction_date
+- transaction_type (PAYMENT or REFUND)
+- amount
+- currency
+- status
+- original_transaction_id (for refunds)
+
+B. bank_settlements.csv
+
+Include:
+- settlement_id
+- transaction_id
+- settlement_date
+- settlement_amount
+- currency
+- bank_reference
+
+Generate approximately 100–200 records.
+
+The generated data must deliberately contain:
+- Normal matching payments.
+- Multiple small rounding differences.
+- Duplicate transaction entries in the platform dataset.
+- Duplicate transaction entries in the bank dataset.
+- Refunds with matching original transactions.
+- Refunds without matching original transactions.
+- Transactions awaiting bank settlement due to the 1–2 day delay.
+- A few realistic date and amount variations.
+
+Use a fixed random seed so that datasets are reproducible.
+
+Also provide a button in Streamlit to regenerate sample data.
+
+## 5. Core Reconciliation Engine
+
+This is the most important part of the project.
+
+Build a deterministic reconciliation engine using Python and Pandas.
+
+Do not use an LLM to make the actual financial matching decisions.
+
+### A. Data validation
+
+- Check mandatory columns.
+- Validate amount fields.
+- Validate dates.
+- Check missing transaction IDs.
+- Check supported currencies.
+- Handle invalid or empty CSV files.
+- Show clear error messages.
+
+### B. Transaction matching
+
+Match platform transactions with bank settlements using transaction_id, currency, amount and settlement information.
+
+Handle settlement delays of 1–2 days.
+
+Classify transactions into:
+- Matched.
+- Pending Settlement.
+- Amount Mismatch.
+- Missing from Bank.
+- Missing from Platform.
+
+Do not treat a transaction as missing from the bank if it is still within the configured settlement window.
+
+### C. Duplicate detection
+
+Detect duplicate transaction IDs separately in the platform dataset and bank dataset.
+
+Show:
+- Duplicate transaction ID.
+- Number of occurrences.
+- Dataset where duplication occurred.
+- Total financial impact where it can be calculated reliably.
+
+Do not silently remove duplicates before reporting them.
+
+### D. Rounding difference detection
+
+Detect small amount differences between platform and bank records.
+
+Support configurable rounding tolerance.
+
+Also calculate aggregate differences by currency and settlement period so that small individual differences that appear insignificant can be identified when summed.
+
+Clearly distinguish:
+- Individual amount differences.
+- Cumulative rounding differences.
+
+### E. Unmatched refund detection
+
+For every refund, verify whether its original_transaction_id exists in the platform payment records.
+
+Identify:
+- Valid refunds.
+- Refunds with missing original transactions.
+- Refunds with invalid references.
+- Refunds with inconsistent amounts, where applicable.
+
+Do not incorrectly classify a valid refund as an unmatched refund.
+
+## 6. Dashboard and User Interface
+
+Build a professional, modern Streamlit dashboard.
+
+Application name: PayRecon AI.
+
+Use a clean financial analytics dashboard design with a professional color scheme.
+
+The interface should include:
+
+### Header
+- PayRecon AI logo/title.
+- Short description.
+- Reconciliation status.
+
+### Sidebar
+- Upload Platform Transactions CSV.
+- Upload Bank Settlements CSV.
+- Use Sample Data option.
+- Settlement delay configuration.
+- Rounding tolerance configuration.
+- Run Reconciliation button.
+
+### Dashboard KPI cards
+Display:
+- Total Platform Transactions.
+- Total Bank Settlements.
+- Successfully Matched Transactions.
+- Pending Settlements.
+- Total Discrepancies.
+- Total Amount Difference.
+
+### Visualizations
+Create interactive charts using Plotly:
+- Matched vs unmatched transactions.
+- Discrepancy distribution.
+- Platform vs bank settlement amounts.
+- Daily settlement trends.
+
+### Detailed results
+
+Create separate tabs:
+
+1. Overview
+2. Matched Transactions
+3. Rounding Differences
+4. Duplicate Transactions
+5. Unmatched Refunds
+6. Pending Settlements
+7. AI Insights
+8. Reports and Exports
+
+Use interactive data tables with useful filtering and search options.
+
+Allow downloading:
+- Full reconciliation report CSV.
+- Discrepancy report CSV.
+- Summary report.
+
+## 7. AI Integration
+
+Use Groq API to create an AI-powered discrepancy explanation feature.
+
+The AI should:
+- Explain why a discrepancy might have occurred.
+- Summarize important reconciliation findings.
+- Highlight unusual patterns.
+- Suggest practical next steps for investigation.
+- Generate a readable month-end reconciliation summary.
+
+Important rules:
+
+- The deterministic reconciliation engine must identify discrepancies.
+- The LLM must only explain the already calculated results.
+- Never send API keys to the frontend.
+- Read GROQ_API_KEY from environment variables or Streamlit secrets.
+- Do not expose sensitive customer information to the LLM.
+- If the API key is unavailable, the application must still work.
+- Provide a fallback explanation system using predefined templates.
+- Clearly label AI-generated explanations.
+
+## 8. Test Cases
+
+Create automated Pytest tests.
+
+At minimum, cover these scenarios:
+
+Test 1: Normal Matching Transaction
+A platform transaction and bank settlement have the same transaction ID and amount. Expected: Matched.
+
+Test 2: Rounding Difference
+A platform transaction has an amount of 100.00 and the bank settlement has 99.99. Expected: Rounding Difference when within the configured tolerance.
+
+Test 3: Duplicate Entry
+The same transaction ID appears twice in one dataset. Expected: Duplicate Entry.
+
+Test 4: Unmatched Refund
+A refund refers to an original transaction that does not exist. Expected: Unmatched Refund.
+
+Also test:
+- Pending settlement within the 1–2 day window.
+- Missing transaction IDs.
+- Invalid CSV columns.
+- Empty datasets.
+- Duplicate records in both datasets.
+- Aggregate rounding differences.
+
+Tests must verify actual outputs, not just whether functions execute without crashing.
+
+## 9. Error Handling and Reliability
+
+Implement:
+- File validation.
+- Invalid CSV handling.
+- Missing column detection.
+- Invalid amount and date handling.
+- API failures and timeout handling.
+- Empty dataset handling.
+- Duplicate detection without data loss.
+- Clear user-facing messages.
+
+Use Decimal or integer minor currency units for financial calculations where appropriate. Avoid unsafe floating-point comparisons.
+
+Keep calculations deterministic and explain all matching assumptions in the README.
+
+## 10. Export and Reporting
+
+Allow users to export reconciliation results in CSV format.
+
+Generate a downloadable summary containing:
+- Total transactions.
+- Matched transactions.
+- Pending settlements.
+- Total discrepancies.
+- Rounding differences.
+- Duplicate entries.
+- Unmatched refunds.
+- Reconciliation completion status.
+
+## 11. Deployment
+
+Prepare the application for Streamlit Community Cloud.
+
+Provide:
+- requirements.txt
+- .gitignore
+- .env.example
+- .streamlit/config.toml
+- Complete README.md.
+
+Explain how to:
+1. Run the application locally.
+2. Configure the Groq API key securely.
+3. Run automated tests.
+4. Upload the project to GitHub.
+5. Deploy using Streamlit Community Cloud.
+6. Configure Streamlit secrets.
+
+Do not include real API keys.
+
+## 12. Production Risks
+
+In the README, explain at least three production risks:
+
+- Incorrect or delayed bank settlement data.
+- Duplicate processing or incorrect transaction matching.
+- Financial data privacy and security.
+
+Explain how these risks can be reduced.
+
+## 13. Development Instructions
+
+Follow this development workflow:
+
+1. Inspect the current workspace.
+2. Create the complete project directory structure.
+3. Implement the data generator.
+4. Implement validation and preprocessing.
+5. Implement the reconciliation engine.
+6. Implement all discrepancy detection modules.
+7. Implement AI explanations.
+8. Build the Streamlit dashboard.
+9. Add CSV export functionality.
+10. Write all automated tests.
+11. Run the tests.
+12. Fix any errors found.
+13. Run the application and verify that it works.
+14. Update README with accurate setup and deployment instructions.
+
+Do not stop after creating a few example files.
+
+Actually write the complete source code for every required file.
+
+Do not leave TODO comments, placeholder functions, pseudocode or incomplete modules.
+
+If a technical decision is ambiguous, choose a sensible approach, document the assumption and continue.
+
+Do not claim that deployment or tests succeeded unless you actually performed and verified them.
+
+If something cannot be completed in the current environment, clearly explain what remains and how I can complete it.
+
+## 14. Final Deliverables
+
+At the end, provide:
+
+1. Complete working project source code.
+2. Generated sample CSV datasets.
+3. Automated test cases.
+4. Test execution results.
+5. requirements.txt.
+6. Complete README.md.
+7. .env.example.
+8. Deployment instructions.
+9. Instructions to create a ZIP archive.
+10. A checklist for recording a demonstration video.
+
+Build this as a clean, professional, demonstrable AI engineering project suitable for an internship technical assessment.
+
+Start implementing the project now. Work systematically, verify your implementation and fix errors rather than just describing the solution.

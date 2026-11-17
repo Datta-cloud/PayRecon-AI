@@ -1,0 +1,15 @@
+I want to build a Payment Reconciliation Application using Python and Streamlit.
+
+The application should compare payment transactions recorded by a payment platform with the actual settlement records received from a bank.
+
+It should identify differences between the two datasets, including rounding differences, duplicate transactions and refunds that do not have a matching original transaction.
+
+There are no datasets provided, so generate sample payment and bank settlement CSV files.
+
+Build an easy-to-use interface where users can upload both CSV files, compare the records and see the mismatches.
+
+Use Python, Pandas and Streamlit. Include some AI functionality that can explain why a transaction might not match.
+
+Also include test cases to verify the application, proper error handling and instructions to run and deploy it.
+
+Make the application clean, practical and suitable for demonstrating as an AI engineering project.
