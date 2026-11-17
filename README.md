@@ -1,149 +1,292 @@
-# PayRecon AI
+# PayRecon AI 💳
+### AI-Powered Payment Reconciliation & Discrepancy Detection
 
-Payment reconciliation for a payment platform and its bank. The platform records a transaction instantly; the bank settles 1-2 days later. At month end the two datasets should agree. PayRecon AI compares them, finds the differences, and explains them.
+PayRecon AI is an intelligent payment reconciliation application that compares payment platform transactions with bank settlement records to identify discrepancies, detect unusual patterns, and generate actionable explanations using **Google Gemini AI**.
 
-**A deterministic Pandas engine makes every financial decision. The LLM (Groq) only explains results the engine has already produced.** Without an API key the app still works and uses labelled template explanations.
+It helps finance teams identify rounding differences, duplicate transactions, unmatched refunds, missing payments, and pending settlements through an interactive dashboard.
 
-## What it detects
+---
 
-| Finding | Meaning |
+## 🚀 Key Features
+
+- **Automated Reconciliation:** Compare payment platform records against bank settlement data.
+- **Rounding Difference Detection:** Identify small transaction-level differences and cumulative rounding variations.
+- **Duplicate Transaction Detection:** Identify potential duplicate entries in platform and bank records.
+- **Unmatched Refund Detection:** Find refunds without valid original payment references.
+- **Pending Settlement Detection:** Handle normal bank settlement delays of 1–2 days.
+- **Missing Transaction Detection:** Identify transactions appearing in only one dataset.
+- **AI-Powered Insights:** Use Google Gemini to explain detected discrepancies and generate month-end summaries.
+- **Interactive Dashboard:** Explore results through dedicated tabs and summary metrics.
+- **Reports & Exports:** Review and export reconciliation findings.
+- **Fallback Explanations:** Continue using template-based explanations if Gemini is unavailable.
+- **Configurable Settings:** Adjust settlement delays, rounding tolerance, and sample data generation.
+
+---
+
+## 🧠 How It Works
+
+PayRecon AI follows a deterministic-first architecture.
+
+1. Upload payment platform and bank settlement CSV files, or use sample data.
+2. Validate and preprocess the datasets.
+3. Run the reconciliation engine to match transactions.
+4. Detect discrepancies such as duplicates, rounding differences, unmatched refunds, and missing transactions.
+5. Send anonymised reconciliation summaries to Google Gemini for explanations.
+6. Display results and actionable recommendations in the dashboard.
+
+**Important:** The reconciliation engine performs all financial calculations and discrepancy detection. Gemini AI only explains the results; it does not decide whether transactions match.
+
+---
+
+## 🏗️ System Architecture
+
+```text
+       Platform Transactions CSV
+                  |
+                  |
+       Bank Settlements CSV
+                  |
+                  v
+        Data Validation
+                  |
+                  v
+      Reconciliation Engine
+                  |
+          +-------+-------+
+          |       |       |
+          v       v       v
+       Rounding Duplicates Refunds
+          |       |       |
+          +-------+-------+
+                  |
+                  v
+        Reconciliation Results
+                  |
+                  v
+           Google Gemini AI
+                  |
+          AI Explanations
+                  |
+                  v
+        Streamlit Dashboard
+                  |
+          Reports & Exports
+```
+
+---
+
+## 🛠️ Technology Stack
+
+| Component | Technology |
 |---|---|
-| Rounding Difference | Per-transaction gap within the tolerance. Also shown cumulatively by currency and settlement week, so many tiny gaps that add up become visible. |
-| Duplicate Entry | The same transaction ID more than once, reported separately for the platform and the bank. Nothing is deleted. |
-| Unmatched Refund | A refund whose original payment is missing, blank, self-referencing, a refund, or a failed payment. Refunds that exceed or are inconsistent with the original are flagged separately. |
-| Pending Settlement | Not yet in the bank file but still within the settlement window. **Not an error.** |
-| Also found | Amount Mismatch, Missing from Bank, Missing from Platform, Status Conflict. |
+| Programming Language | Python |
+| Frontend / Dashboard | Streamlit |
+| Data Processing | Pandas |
+| Financial Calculations | Python Decimal |
+| AI Integration | Google Gemini API |
+| AI SDK | Google GenAI (`google-genai`) |
+| Visualization | Plotly |
+| Testing | Pytest |
+| Environment Configuration | python-dotenv |
+| Deployment | Streamlit Community Cloud |
+| Version Control | Git & GitHub |
 
-An amount bridge explains the platform-minus-bank gap per currency. Its "unexplained" line is a self-check and should always be zero.
 
-## Project layout
+---
 
-```
-app.py                         Streamlit UI (no business logic)
-config.py                      Constants, ReconConfig, Groq key lookup
-reconciliation/
-  data_loader.py               CSV -> raw all-string DataFrames
-  validator.py                 Validation, Decimal/date parsing, invalid-row report
-  matcher.py                   Platform <-> bank matching and classification
-  discrepancy_detector.py      Duplicates, rounding, refunds, discrepancy table
-  reconciliation_engine.py     run_reconciliation(): single entry point, bridge, summary
-  ai_explainer.py              Groq explanations + template fallback
-utils/                         charts.py (Plotly), export.py, formatting.py
-data/                          generate_data.py + the two sample CSVs
-tests/                         79 pytest tests
+## ⚙️ Installation & Setup
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Datta-cloud/PayRecon-AI.git
 ```
 
-## Run locally
+### 2. Navigate to the project directory
 
-Requires Python 3.11 or newer.
+```bash
+cd PayRecon-AI
+```
+
+### 3. Create a virtual environment
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
+```
+
+Activate it on Windows:
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+### 4. Install dependencies
+
+```bash
 pip install -r requirements.txt
+```
+
+If the Gemini SDK is not already included in your requirements:
+
+```bash
+pip install google-genai python-dotenv
+```
+
+### 5. Configure Gemini API
+
+Get a Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey).
+
+Create a `.env` file in the project root:
+
+```env
+GEMINI_API_KEY=your_actual_gemini_api_key
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+Replace the placeholder with your actual API key.
+
+**Never commit your `.env` file or expose your API key publicly.**
+
+### 6. Run the application
+
+```bash
 streamlit run app.py
 ```
 
-The app opens with the sample data already reconciled. Use the sidebar to upload your own files, change the settlement window or rounding tolerance, or regenerate the sample data.
+The application will open in your browser.
 
-### Input format
+---
 
-`platform_transactions.csv`: `transaction_id, customer_id, transaction_date, transaction_type (PAYMENT|REFUND), amount, currency, status (SUCCESS|FAILED), original_transaction_id`
+## 🤖 Google Gemini AI Integration
 
-`bank_settlements.csv`: `settlement_id, transaction_id, settlement_date, settlement_amount, currency, bank_reference`
+PayRecon AI uses Google's Gemini API to generate natural-language explanations from reconciliation results.
 
-Refund amounts on the platform are positive with type `REFUND`; the bank records them as negative amounts. Supported currencies: INR, USD, EUR, GBP.
+Gemini helps with:
 
-## Groq API key
+- Explaining why discrepancies may have occurred.
+- Identifying unusual reconciliation patterns.
+- Generating month-end reconciliation summaries.
+- Suggesting practical investigation steps.
+- Helping finance teams understand reconciliation outcomes.
 
-The key is read on the server only, from the environment or Streamlit secrets, and is never shown in the UI.
+### AI workflow
 
-- Local: copy `.env.example` to `.env` and set `GROQ_API_KEY`. `.env` is git-ignored.
-- Streamlit Cloud: see "Deploy" below.
-
-Get a key at https://console.groq.com. Without a key, the AI Insights tab shows template explanations labelled "Template-based". Failed or timed-out API calls (20 s timeout, 1 retry) fall back the same way. Only aggregated, anonymised figures are sent to the model: no customer IDs, bank references or settlement IDs. Numbers in AI text that do not appear in the engine output are flagged.
-
-## Run the tests
-
-```bash
-python -m pytest -q
+```text
+Reconciliation Engine
+        |
+        v
+Anonymised Summary
+        |
+        v
+Google Gemini API
+        |
+        v
+AI-Generated Explanation
+        |
+        v
+Dashboard
 ```
 
-79 tests, all passing at the time of writing. They assert actual outputs, not just that code runs. They cover the four required scenarios (normal match, 100.00 vs 99.99 rounding, duplicate entry, unmatched refund), pending settlement inside and outside the window, missing IDs, invalid columns, empty files, duplicates in both datasets, cumulative rounding, the AI fallback and failure paths, and exports. One test checks that the engine finds exactly the problems injected by the data generator.
+The application also supports template-based explanations when:
+- No Gemini API key is configured.
+- The API request fails.
+- The service is temporarily unavailable.
 
-## Matching assumptions
+The deterministic reconciliation engine continues to work independently of the AI service.
 
-1. Records are matched on `transaction_id`. Currency must also agree, otherwise the pair is an Amount Mismatch.
-2. Money is `decimal.Decimal` throughout. Floats are used only for charts and on-screen tables.
-3. Refunds are compared as negative amounts, so a refund settled as a negative bank amount matches.
-4. If an ID appears several times in one dataset, the first occurrence is matched and the extra copies are reported as duplicates.
-5. The reporting date is the latest date found in either file (a different date can be set in `ReconConfig.as_of_date`).
-6. A SUCCESS payment with no bank record is Pending when its age (reporting date minus transaction date) is at most the settlement window maximum, otherwise Missing from Bank.
-7. A gap up to and including the rounding tolerance (default 0.05) is a Rounding Difference. A larger gap is an Amount Mismatch.
-8. A settlement outside the 1-2 day window is still matched, but flagged as a late settlement.
-9. FAILED platform payments expect no settlement (Not Settleable). If the bank settled one, it is a Status Conflict.
-10. Invalid rows (bad amount, date, currency, or missing ID) are excluded from matching but listed under data quality issues; they are not silently dropped. A file with missing columns, no rows, or no valid rows stops the run with a clear message.
-11. Refunds are checked against payments in the same platform file. A refund for a payment in an earlier period appears as Unmatched until the earlier period's data is included.
+---
 
-## Deploy to GitHub and Streamlit Community Cloud
+## 📊 Dashboard Modules
 
-```bash
-git init
-git add .
-git commit -m "PayRecon AI"
-git branch -M main
-git remote add origin https://github.com/<your-user>/PayRecon-AI.git
-git push -u origin main
-```
+| Module | Description |
+|---|---|
+| Overview | Overall reconciliation statistics |
+| Matched Transactions | Successfully matched transactions |
+| Rounding Differences | Transaction-level and cumulative rounding differences |
+| Duplicate Transactions | Potential duplicate transaction records |
+| Unmatched Refunds | Refunds without valid original payments |
+| Pending Settlements | Transactions within the expected settlement window |
+| AI Insights | Gemini-powered explanations and summaries |
+| Reports and Exports | Reconciliation reports and downloadable results |
 
-Then:
+---
 
-1. Go to https://share.streamlit.io and sign in with GitHub.
-2. Select **Create app**, choose the repository, branch `main`, and main file `app.py`.
-3. Open **Advanced settings > Secrets** and add:
-   ```toml
-   GROQ_API_KEY = "your_groq_api_key_here"
-   ```
-4. Deploy. Secrets can be edited later under the app's **Settings > Secrets**. Never commit `.streamlit/secrets.toml`.
+## 🧪 Testing
 
-The sample CSVs are committed, so the app works on first load. "Regenerate sample data" rewrites those files on the server; on Streamlit Cloud they reset when the app restarts.
-
-## Production risks and how to reduce them
-
-**Incorrect or delayed bank settlement data.** A late or partial bank file would make valid payments look missing. Reduce it by keeping the settlement window configurable, flagging late settlements instead of treating them as errors, checking the bank file's completeness (record counts or control totals) before reconciling, and re-running when late data arrives.
-
-**Duplicate processing or incorrect matching.** Matching on ID alone can pair the wrong records, and "fixing" duplicates by deleting them destroys evidence. This engine never deletes data, reports duplicates separately per dataset, matches on ID and currency, and has the zero-unexplained bridge as a self-check. In production, add idempotency keys on the platform side, match on additional fields (reference, date), and require human approval before adjustments are posted.
-
-**Financial data privacy and security.** Transaction data is sensitive and an LLM is an external service. Here, only aggregated figures go to the model, API keys live in environment variables or secrets, and the model cannot change results. In production, also use access control and audit logs, encrypt data at rest and in transit, use a provider under a data-processing agreement (or a self-hosted model), and keep the CSVs out of source control.
-
-## Limitations
-
-- Matching is by transaction ID; there is no fuzzy matching on amount and date.
-- One month of data is expected per run.
-- Platform status is limited to SUCCESS and FAILED.
-- The app has been tested with Streamlit's test harness and the unit tests; deployment to Streamlit Community Cloud and a live Groq call must be verified by you with your own account and key.
-
-## Create a ZIP archive
+Run the test suite using:
 
 ```bash
-cd ..
-zip -r PayRecon-AI.zip PayRecon-AI -x "*/__pycache__/*" "*/.pytest_cache/*" "*/.venv/*" "*/.env"
+pytest -q
 ```
 
-(On Windows, right-click the project folder > Send to > Compressed folder, after deleting `.venv` and `.env`.)
+Important test scenarios include:
 
-## Demo video checklist
+1. Exact transaction matching.
+2. Rounding difference detection.
+3. Duplicate transaction detection.
+4. Unmatched refund detection.
+5. Pending settlements within the 1–2 day settlement window.
+6. Missing transactions.
+7. Gemini API failure and template fallback.
 
-- [ ] Run `streamlit run app.py` and show the dashboard loading with sample data.
-- [ ] Explain the problem in one sentence (instant platform record, bank settles 1-2 days later).
-- [ ] Point out the KPI cards and the status banner.
-- [ ] Walk through the Overview charts, then the gap waterfall (unexplained = 0).
-- [ ] Rounding tab: individual vs cumulative differences.
-- [ ] Duplicates tab: platform vs bank, financial impact.
-- [ ] Unmatched Refunds tab: unmatched vs valid refunds.
-- [ ] Pending Settlements tab: expected timing, not errors. Change the settlement window in the sidebar and re-run to show it update.
-- [ ] Upload a broken CSV (missing column) to show the clear error message.
-- [ ] AI Insights: generate the summary and explain one discrepancy; point out the AI / template label.
-- [ ] Reports tab: download the three reports.
-- [ ] Terminal: run `python -m pytest -q` and show all tests passing.
-- [ ] Mention the design rule: the engine decides, the LLM only explains.
+---
+
+## ☁️ Deployment on Streamlit Community Cloud
+
+1. Push the project to GitHub.
+2. Visit [Streamlit Community Cloud](https://share.streamlit.io/).
+3. Create a new application.
+4. Select the `Datta-cloud/PayRecon-AI` repository.
+5. Select the `main` branch.
+6. Set the main file path to `app.py`.
+7. Open application settings and navigate to **Secrets**.
+8. Add the following secrets:
+
+```toml
+GEMINI_API_KEY = "your_actual_gemini_api_key"
+GEMINI_MODEL = "gemini-2.5-flash"
+```
+
+9. Save and deploy the application.
+
+---
+
+## 🔐 Security & Production Considerations
+
+- API keys are stored in environment variables or deployment secrets.
+- Sensitive customer identifiers and bank references should not be sent to Gemini.
+- Financial calculations are handled by deterministic Python logic.
+- AI-generated explanations are advisory and should be reviewed before financial action.
+- Duplicate detection should distinguish confirmed duplicates from probable duplicates.
+- Settlement timing differences should not automatically be treated as financial errors.
+- Production deployments should include access controls, audit logs, monitoring, and secure data retention policies.
+
+---
+
+## 🔮 Future Enhancements
+
+- Automated bank statement integrations.
+- Real-time reconciliation monitoring.
+- Advanced duplicate detection.
+- Multi-bank and multi-payment gateway support.
+- Historical reconciliation analytics.
+- Role-based access control.
+- Improved audit trails and exception workflows.
+
+---
+
+## 👨‍💻 Author
+
+**Datta Hadke**
+
+B.Tech – Artificial Intelligence & Data Science
+
+Vishwakarma Institute of Information Technology, Pune
+
+GitHub: [Datta-cloud](https://github.com/Datta-cloud)
+
+---
+
+## 📜 License
+
+This project is developed for educational and demonstration purposes. Add an appropriate open-source license before distributing it for reuse.
